@@ -58,7 +58,7 @@ Packet_t * communicator_Sendcr();
 void freepacket(Packet_t * packet);
 uint16_t calcHmac(uint8_t* pbuff, uint32_t lenght);
 Packet_t* registerPlayerPacket(uint16_t transactionID, char* playerName);
-Packet_t * creatgamepacket(CommandID_e type, uint16_t playerID, uint32_t sum);
+Packet_t * creategamepacket(CommandID_e type, uint16_t playerID, uint32_t sum);
 void Communicator_sendappmessage(uint8_t * pl, uint32_t pllen);
 void communicator_sendcompplayerreg(uint16_t transactionID, char* playerName);
 Packet_t * registermovemetpacket(bool up, bool down, bool left, bool right,
@@ -67,5 +67,6 @@ Packet_t * registerdroopfood(uint16_t transactionID);
 void communicator_movement(bool up, bool down, bool left, bool right,
 		uint16_t transactionID);
 void communicator_drop(uint16_t transactionID);
+Packet_t * registercreatemessage(char * message,uint16_t transactionID);
 
 #endif /* SRC_COMMUNICATOR_COMMUNICATOR_H_ */

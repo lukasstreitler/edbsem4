@@ -165,7 +165,6 @@ void communicator_drop(uint16_t transactionID) {
 	Communicator_sendappmessage(pdropfood->pBuffer, pdropfood->len);
 }
 //ceratepacket ------------------------------------------------------------------------------
-
 Packet_t * creatpacket(uint32_t lenpayload, uint8_t type) //erweitern falls zeit
 
 {
@@ -214,38 +213,20 @@ Packet_t * creatpacket(uint32_t lenpayload, uint8_t type) //erweitern falls zeit
 	}
 	return ppacket;
 }
-
 // Paketgame_t------------------------------------------------------------------------------
-
 Packet_t * registerPlayerPacket(uint16_t transactionID, char* playerName) {
 	uint8_t namelen = strlen(playerName);
 	uint32_t sum = 7 + 1 + 2 + namelen;
-	Packet_t * ppacket = malloc(sizeof(Packet_t));
-	ppacket->len = sum;
-	ppacket->pBuffer = malloc(ppacket->len);
-	memset(ppacket->pBuffer, 0x00, ppacket->len);
-	ppacket->pBuffer[0] = 0x01;
-	write_msb2byte(&ppacket->pBuffer[1], sum - 7); // - HEADER!!!
-	write_msb2byte(&ppacket->pBuffer[3], REGISTER_PLAYER);
-	write_msb2byte(&ppacket->pBuffer[5], transactionID);
+	Packet_t * ppacket = creategamepacket(REGISTER_PLAYER,transactionID,sum);
 	ppacket->pBuffer[7] = 0x01;
 	write_msb2byte(&ppacket->pBuffer[8], namelen);
 	memcpy(&ppacket->pBuffer[10], &playerName[0], namelen);
 	return ppacket;
-
 }
 Packet_t * registermovemetpacket(bool up, bool down, bool left, bool right,
 		uint16_t transactionID) {
-
 	uint32_t len = APP_HEADER_LEN;
-	Packet_t * ppacket = malloc(sizeof(Packet_t));
-	ppacket->len = len;
-	ppacket->pBuffer = malloc(ppacket->len);
-	memset(ppacket->pBuffer, 0x00, ppacket->len);
-	ppacket->pBuffer[0] = 0x01;
-	write_msb2byte(&ppacket->pBuffer[1], len - 7);
-	write_msb2byte(&ppacket->pBuffer[3], PLAYER_CONTROLL);
-	write_msb2byte(&ppacket->pBuffer[5], transactionID);
+	Packet_t * ppacket = creategamepacket(PLAYER_CONTROLL,transactionID,len);
 	ppacket->pBuffer[7] = 0;
 
 	if (up == true) {
@@ -265,35 +246,31 @@ Packet_t * registermovemetpacket(bool up, bool down, bool left, bool right,
 }
 Packet_t * registerdroopfood(uint16_t transactionID) {
 	uint32_t len = APP_HEADER_LEN;
-	Packet_t * ppacket = malloc(sizeof(Packet_t));
-	ppacket->len = len;
-	ppacket->pBuffer = malloc(ppacket->len);
-	memset(ppacket->pBuffer, 0x00, ppacket->len);
-	ppacket->pBuffer[0] = 0x01;
-	write_msb2byte(&ppacket->pBuffer[1], len - 7);
-	write_msb2byte(&ppacket->pBuffer[3], DROP_FOOD);
-	write_msb2byte(&ppacket->pBuffer[5], transactionID);
+	Packet_t * ppacket = creategamepacket(DROP_FOOD,transactionID,len);
 	ppacket->pBuffer[7] = 0;
 	return ppacket;
 }
+Packet_t * registercreatemessage(char * message,uint16_t transactionID){
+	uint16_t messagelen= strlen(message);
+	uint32_t sum = APP_HEADER_LEN + messagelen;
+	Packet_t * ppacket = creategamepacket(CHAT_MESSAGE,transactionID,sum);
+	memcpy(&ppacket->pBuffer[7],message,sum);
+	return ppacket;
 
+}
 // creategamepacket-------------------------------------------------------------------------
-
-Packet_t * creatgamepacket(CommandID_e type, uint16_t transactionID,
-		uint32_t sum) // erweitern falls zeit
+Packet_t * creategamepacket(CommandID_e type, uint16_t transactionID,
+		uint32_t sum)
 {
 	Packet_t * ppacket = malloc(sizeof(Packet_t));
 	ppacket->len = sum;
-	uint8_t * pBuffer = malloc(sum);
-	write_msb2byte(&pBuffer[1], sum - 7); // - HEADER!!!
-	write_msb2byte(&pBuffer[3], REGISTER_PLAYER);
-	write_msb2byte(&pBuffer[5], transactionID);
-	ppacket->pBuffer = &pBuffer[0];
-	pBuffer[0] = 1;
+	ppacket->pBuffer = malloc(ppacket->len);
+	memset(ppacket->pBuffer, 0x00, ppacket->len);
+	ppacket->pBuffer[0] = 0x01;
 	if (type == REGISTER_PLAYER) {
-		write_msb2byte(&pBuffer[1], sum - 7); // - HEADER!!!
-		write_msb2byte(&pBuffer[3], REGISTER_PLAYER);
-		write_msb2byte(&pBuffer[5], transactionID);
+		write_msb2byte(&ppacket->pBuffer[1], sum - 7); // - HEADER!!!
+		write_msb2byte(&ppacket->pBuffer[3], REGISTER_PLAYER);
+		write_msb2byte(&ppacket->pBuffer[5], transactionID);
 
 	} else if (type == PLAYER_CONTROLL) {
 		write_msb2byte(&ppacket->pBuffer[1], sum - 7);
@@ -304,11 +281,12 @@ Packet_t * creatgamepacket(CommandID_e type, uint16_t transactionID,
 		write_msb2byte(&ppacket->pBuffer[3], DROP_FOOD);
 		write_msb2byte(&ppacket->pBuffer[5], transactionID);
 	} else if (type == CHAT_MESSAGE) {
-		//
+		write_msb2byte(&ppacket->pBuffer[1], sum - 7);
+		write_msb2byte(&ppacket->pBuffer[3],CHAT_MESSAGE);
+		write_msb2byte(&ppacket->pBuffer[5], transactionID);
 	}
 	return ppacket;
 }
-
 // CALC ----------------------------------------------------------------------------------
 uint16_t calcCRC() {
 	uint8_t cr[12] = { 0x00, 0x00, 0x00, 0x00, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE,

@@ -9,6 +9,8 @@
 
 static bool gRunning = true;
 static void cbInputHandler(InputKeyMask_t);
+static uint16_t playerID = 0x2020;
+static char* playername="Lukas";
 //IP 80.110.104.6
 int main(int argc, char** argv) {
 //test
@@ -21,7 +23,7 @@ int main(int argc, char** argv) {
 	communicator_connect(GAME_SERVER);
 	communicator_createSession();
 	communicator_heartbeat();
-	communicator_sendcompplayerreg(0x2020, "Lukas");
+	communicator_sendcompplayerreg(playerID, playername);
 	uint32_t sekunden = time(NULL);
 	uint32_t lastheartebeat= sekunden;
 
@@ -59,6 +61,7 @@ static void cbInputHandler(InputKeyMask_t m) {
 	bool right = (m & INPUT_KEY_MASK_KEY_RIGHT);
 	if (!(((up == true) && (down == true)) || ((left == true) && (right == true))))
 	{
-
+		Packet_t * pmove = registercontrollpacket(up,right,down,left,playerID);
+		Communicator_sendappmessage(pmove->pBuffer, pmove->len);
 	}
 }

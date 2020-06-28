@@ -12,13 +12,14 @@
 #include <string.h>
 #include <windows.h>
 #include "../network/network.h"
+#include "../input/input_service.h"
 
 #define DEFAULT_SERVER_IP_ADDRESS			("195.34.89.241")
 #define DEFAULT_SERVER_PORT					(7)
 #define DEFAULT_GAME_SERVER_IP_ADRESS		("52.57.105.0")
 #define DEFAULT_GAME_SERVER_PORT			(44444)
 #define SESSION_HEADER_LEN					9
-
+#define GAME_HEADER_LENGHT  				8
 uint16_t gSessionID = 0;
 uint16_t gSequenceNr = 0;
 uint32_t gNonce=0;
@@ -104,23 +105,7 @@ void communicator_heartbeat() {
 	printf("\n%d\n",gSessionID);
 	freepacket(pheartbeat);
 
-//	uint8_t * pBuffer = malloc( SESSION_HEADER_LEN);
-//	sessionFlags_t * header = &pBuffer[0];
-//	pBuffer[0] = 0;
-//	uint16_t hmac=0;
-//	header->heartbeat=1;
-//	write_msb2byte(&pBuffer[1],0);
-//	write_msb2byte(&pBuffer[3],gSessionID);
-//	write_msb2byte(&pBuffer[5],++gSequenceNr);
-//	write_msb2byte(&pBuffer[7],0);
-//
-//	pheartbeat->pBuffer =&pBuffer[0];
-//	pheartbeat->len = SESSION_HEADER_LEN;
-//	hmac = calcHmac(pheartbeat->pBuffer,pheartbeat->len - 2);
-//	write_msb2byte(&pheartbeat->pBuffer[7],hmac);
-//	network_send(pheartbeat->pBuffer,pheartbeat->len);
-//	printf("\n%d\n",gSessionID);
-//	freepacket(pheartbeat);
+
 }
 
 
@@ -136,7 +121,7 @@ void communicator_createSession(){
 	}
 }
 
-Packet_t * communicator_Sendcr()
+Packet_t * communicator_Sendcr()  //ausbessern falls zeit
 {
 	gCcr = calcCRC();
 	Packet_t * ppacket = malloc(sizeof(Packet_t));
@@ -158,7 +143,7 @@ Packet_t * communicator_Sendcr()
 
 }
 
-void Communicator_sendplayerreg(uint8_t * pl,uint32_t pllen)
+void Communicator_sendappmessage(uint8_t * pl,uint32_t pllen)
 {
 
 
@@ -178,10 +163,11 @@ void Communicator_sendplayerreg(uint8_t * pl,uint32_t pllen)
 
 }
 
+
 void communicator_sendcompplayerreg(uint16_t transactionID, char* playerName)
 {
 	Packet_t * pPlayerRegsiterPacket =  registerPlayerPacket(transactionID, playerName);
-	Communicator_sendplayerreg(pPlayerRegsiterPacket->pBuffer,pPlayerRegsiterPacket->len);
+	Communicator_sendappmessage(pPlayerRegsiterPacket->pBuffer,pPlayerRegsiterPacket->len);
 
 }
 //ceratepacket ------------------------------------------------------------------------------
@@ -260,20 +246,32 @@ Packet_t * registerPlayerPacket(uint16_t transactionID, char* playerName)
 	memcpy(&ppacket->pBuffer[10], &playerName[0], namelen);
 	return ppacket;
 
+}
+Packet_t * registercontrollpacket(bool up, bool down, bool left, bool right,uint16_t transactionID){
+	uint32_t len= GAME_HEADER_LENGHT;
+	Packet_t * ppacket = malloc(sizeof(Packet_t));
+	ppacket->len= len;
+	ppacket->pBuffer= malloc(ppacket->len);
+	memset(ppacket->pBuffer,0x00,ppacket->len);
+	ppacket->pBuffer[0]= 0x01;
+	write_msb2byte(&ppacket->pBuffer[1],len-7);
+	write_msb2byte(&ppacket->pBuffer[3],PLAYER_CONTROLL);
+	write_msb2byte(&ppacket->pBuffer[5], transactionID);
+	ppacket->pBuffer[7]=0;
+	if(up == true){
+		ppacket->pBuffer[7] = (ppacket->pBuffer[7] | INPUT_KEY_MASK_KEY_UP);
+	}
+	if(right == true){
+		ppacket->pBuffer[7] = (ppacket->pBuffer[7]  | INPUT_KEY_MASK_KEY_RIGHT);
+	}
+	if(down == true){
+		ppacket->pBuffer[7] = (ppacket->pBuffer[7]  | INPUT_KEY_MASK_KEY_DOWN);
+	}
+	if(left == true){
+		ppacket->pBuffer[7] = (ppacket->pBuffer[7] | INPUT_KEY_MASK_KEY_LEFT);
+	}
 
-//	uint8_t commandSize = 1 + 2;
-//	uint8_t headerSize = 7;
-//	uint32_t sum = headerSize + commandSize + namelen;
-//	Packet_t * ppacket = malloc (sizeof(Packet_t));
-//	ppacket->len = sum;
-//	//uint8_t * pBuffer = malloc(sum);
-//	ppacket->pBuffer = &pBuffer[0];
-//	pBuffer[0] = 1;
-//	write_msb2byte(&pBuffer[1],sum-7); // - HEADER!!!
-//	write_msb2byte(&pBuffer[3],REGISTER_PLAYER);
-//	write_msb2byte(&pBuffer[5],transactionID);
-//	memcpy(&pBuffer[7], &playerName[0], namelen);
-
+	return ppacket;
 }
 
 
@@ -287,11 +285,7 @@ Packet_t * creatgamepacket(CommandID_e type, uint16_t playerID, uint32_t sum)
 	write_msb2byte(&pBuffer[1],sum-7); // - HEADER!!!
 	write_msb2byte(&pBuffer[3],REGISTER_PLAYER);
 	write_msb2byte(&pBuffer[5],playerID);
-
 	ppacket->pBuffer =&pBuffer[0];
-//	sessionFlags_t * pHeader = &pBuffer[0];
-//	pBuffer[0] = 0;
-//	pHeader->version=0;
 	pBuffer[0] = 1;
 	if(type==REGISTER_PLAYER)
 	{

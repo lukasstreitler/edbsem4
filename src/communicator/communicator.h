@@ -54,11 +54,6 @@ typedef struct Packet{
 void communicator_heartbeat();
 int communicator_connect(Server_e);
 void communicator_createSession();
-//void setHeaderVersion(packetheader_t* header, int version);
-//void setHeaderExit(packetheader_t* header, bool wantExit);
-//void setHeaderChallenge(packetheader_t* header, bool wantChallenge);
-//void setHeaderRequest(packetheader_t* header, bool wantRequest);
-//void setHeaderHeartbeat(packetheader_t* header, bool heartbeat);
 void write_msb2byte(uint8_t* padd, uint16_t val);
 void write_msb4byte(uint8_t* padd, uint32_t val);
 uint16_t calcCRC();
@@ -70,8 +65,10 @@ void freepacket(Packet_t * packet);
 uint16_t calcHmac(uint8_t* pbuff, uint32_t lenght);
 Packet_t* registerPlayerPacket(uint16_t transactionID, char* playerName);
 Packet_t * creatgamepacket(CommandID_e type, uint16_t playerID, uint32_t sum);
-void Communicator_sendplayerreg(uint8_t * pl,uint32_t pllen);
+void Communicator_sendappmessage(uint8_t * pl,uint32_t pllen);
 void communicator_sendcompplayerreg(uint16_t transactionID, char* playerName);
+Packet_t * registercontrollpacket(bool up, bool down, bool left, bool right,uint16_t transactionID);
+
 
 
 

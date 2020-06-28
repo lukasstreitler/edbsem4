@@ -163,6 +163,13 @@ void communicator_sendcompplayerreg(uint16_t transactionID, char* playerName) {
 			pPlayerRegsiterPacket->len);
 
 }
+void communicator_movement(bool up, bool down, bool left, bool right,
+		uint16_t transactionID)
+{
+	Packet_t * pmove = registermovemetpacket(up, right, down, left,
+			transactionID);
+	Communicator_sendappmessage(pmove->pBuffer, pmove->len);
+}
 void communicator_drop(uint16_t transactionID) {
 	Packet_t * pdropfood = registerdroopfood(transactionID);
 	Communicator_sendappmessage(pdropfood->pBuffer, pdropfood->len);

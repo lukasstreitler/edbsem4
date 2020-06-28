@@ -56,8 +56,6 @@ static void cbInputHandler(InputKeyMask_t m) {
 	bool right = (m & INPUT_KEY_MASK_KEY_RIGHT);
 	if (!(((up == true) && (down == true))
 			|| ((left == true) && (right == true)))) {
-		Packet_t * pmove = registermovemetpacket(up, right, down, left,
-				playerID);
-		Communicator_sendappmessage(pmove->pBuffer, pmove->len);
+		communicator_movement(up, down, left , right, playerID);
 	}
 }

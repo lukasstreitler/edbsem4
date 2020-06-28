@@ -20,6 +20,8 @@ int main(int argc, char** argv) {
 	input_service_init(cbInputHandler);
 	communicator_connect(GAME_SERVER);
 	communicator_createSession();
+	communicator_heartbeat();
+	communicator_sendcompplayerreg(0x2020, "Lukas");
 	uint32_t sekunden = time(NULL);
 	uint32_t lastheartebeat= sekunden;
 
@@ -50,5 +52,13 @@ static void cbInputHandler(InputKeyMask_t m) {
 		uint8_t test[3] = { 0, 1, 2 };
 		network_send(test, 3);
 		printf("Packet sent.\r\n");
+	}
+	bool up = (m & INPUT_KEY_MASK_KEY_UP);
+	bool down = (m & INPUT_KEY_MASK_KEY_DOWN);
+	bool left = (m & INPUT_KEY_MASK_KEY_LEFT);
+	bool right = (m & INPUT_KEY_MASK_KEY_RIGHT);
+	if (!(((up == true) && (down == true)) || ((left == true) && (right == true))))
+	{
+
 	}
 }

@@ -47,10 +47,7 @@ typedef struct Packet{
 	uint32_t len;
 }Packet_t;
 
-typedef struct PacketGame{
-	uint8_t* pBuffer;
-	uint32_t len;
-}PacketGame_t;
+
 
 //func -----------------------------------------------------------------------------------------
 
@@ -71,8 +68,11 @@ uint16_t read_msb2byte(uint8_t* pBuf);
 Packet_t * communicator_Sendcr();
 void freepacket(Packet_t * packet);
 uint16_t calcHmac(uint8_t* pbuff, uint32_t lenght);
-PacketGame_t* registerPlayerPacket(uint8_t type, uint16_t len, char* playerName);
-PacketGame_t * creatgamepacket(CommandID_e type, uint16_t playerID, uint32_t sum);
+Packet_t* registerPlayerPacket(uint16_t transactionID, char* playerName);
+Packet_t * creatgamepacket(CommandID_e type, uint16_t playerID, uint32_t sum);
+void Communicator_sendplayerreg(uint8_t * pl,uint32_t pllen);
+void communicator_sendcompplayerreg(uint16_t transactionID, char* playerName);
+
 
 
 

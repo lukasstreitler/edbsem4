@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
+#include "../network/network.h"
 
 #define DEFAULT_SERVER_IP_ADDRESS			("195.34.89.241")
 #define DEFAULT_SERVER_PORT					(7)
@@ -22,7 +23,7 @@ uint16_t gSessionID = 0;
 uint16_t gSequenceNr = 0;
 uint32_t gNonce=0;
 uint16_t gCcr=0;
-
+uint16_t gstate=0;
 static uint8_t secret[8] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00, 0x01};
 
 
@@ -40,12 +41,13 @@ static void cbNetworkReceive(uint8_t* pBuffer, uint32_t len) {
 		gNonce = read_msb4byte(&pBuffer[7]);
 		Packet_t * crpacket = communicator_Sendcr();
 	    network_send(crpacket->pBuffer,crpacket->len);
+		gstate=1;
 	    freepacket(crpacket);
 	}
 
 	if (pBuffer[0] == 0x10) {
 		gSessionID = (pBuffer[3] << 8) | pBuffer[4];
-		printf("SessoinID: %d", gSessionID);
+		printf("SessoinID: %d\n", gSessionID);
 	}
 
 }
@@ -88,22 +90,37 @@ int communicator_connect(Server_e server) {
 
 void communicator_heartbeat() {
 	Packet_t * pheartbeat = malloc(sizeof(Packet_t));
-	uint8_t * pBuffer = malloc( SESSION_HEADER_LEN);
-	sessionFlags_t * header = &pBuffer[0];
-	pBuffer[0] = 0;
-	uint16_t hmac=0;
+	pheartbeat->len= SESSION_HEADER_LEN;
+	pheartbeat->pBuffer = malloc(pheartbeat->len);
+	memset(pheartbeat->pBuffer,0x00,pheartbeat->len);
+	sessionFlags_t * header=(sessionFlags_t*)pheartbeat->pBuffer;
 	header->heartbeat=1;
-	write_msb2byte(&pBuffer[1],0);
-	write_msb2byte(&pBuffer[3],gSessionID);
-	write_msb2byte(&pBuffer[5],++gSequenceNr);
-	write_msb2byte(&pBuffer[7],0);
-
-	pheartbeat->pBuffer =&pBuffer[0];
-	pheartbeat->len = SESSION_HEADER_LEN;
-	hmac = calcHmac(pheartbeat->pBuffer,pheartbeat->len - 2);
+	write_msb2byte(&pheartbeat->pBuffer[1],0);
+	write_msb2byte(&pheartbeat->pBuffer[3],gSessionID);
+	write_msb2byte(&pheartbeat->pBuffer[5],++gSequenceNr);
+	uint16_t hmac =  calcHmac(pheartbeat->pBuffer,pheartbeat->len - 2);
 	write_msb2byte(&pheartbeat->pBuffer[7],hmac);
 	network_send(pheartbeat->pBuffer,pheartbeat->len);
+	printf("\n%d\n",gSessionID);
 	freepacket(pheartbeat);
+
+//	uint8_t * pBuffer = malloc( SESSION_HEADER_LEN);
+//	sessionFlags_t * header = &pBuffer[0];
+//	pBuffer[0] = 0;
+//	uint16_t hmac=0;
+//	header->heartbeat=1;
+//	write_msb2byte(&pBuffer[1],0);
+//	write_msb2byte(&pBuffer[3],gSessionID);
+//	write_msb2byte(&pBuffer[5],++gSequenceNr);
+//	write_msb2byte(&pBuffer[7],0);
+//
+//	pheartbeat->pBuffer =&pBuffer[0];
+//	pheartbeat->len = SESSION_HEADER_LEN;
+//	hmac = calcHmac(pheartbeat->pBuffer,pheartbeat->len - 2);
+//	write_msb2byte(&pheartbeat->pBuffer[7],hmac);
+//	network_send(pheartbeat->pBuffer,pheartbeat->len);
+//	printf("\n%d\n",gSessionID);
+//	freepacket(pheartbeat);
 }
 
 
@@ -113,6 +130,10 @@ void communicator_createSession(){
 	pHeader->version=0;
 	pHeader->session_request=1;
 	network_send(packet,9);
+	while(!gSessionID)
+	{
+		Sleep(10);
+	}
 }
 
 Packet_t * communicator_Sendcr()
@@ -137,7 +158,33 @@ Packet_t * communicator_Sendcr()
 
 }
 
-//ceratpacket ------------------------------------------------------------------------------
+void Communicator_sendplayerreg(uint8_t * pl,uint32_t pllen)
+{
+
+
+	Packet_t * pplayerreg = malloc(sizeof(Packet_t));
+	pplayerreg->len= SESSION_HEADER_LEN + pllen;
+	pplayerreg->pBuffer = malloc(pplayerreg->len);
+	memset(pplayerreg->pBuffer,0x00,pplayerreg->len);
+	write_msb2byte(&pplayerreg->pBuffer[1],pllen);
+	write_msb2byte(&pplayerreg->pBuffer[3],gSessionID);
+	write_msb2byte(&pplayerreg->pBuffer[5],++gSequenceNr);
+	memcpy(&pplayerreg->pBuffer[7],&pl[0], pllen);
+	uint16_t hmac = calcHmac(pplayerreg->pBuffer,pplayerreg->len-2);
+	write_msb2byte(&pplayerreg->pBuffer[SESSION_HEADER_LEN-2 + pllen], hmac);
+	network_send(pplayerreg->pBuffer, pplayerreg->len);
+	freepacket(pplayerreg);
+
+
+}
+
+void communicator_sendcompplayerreg(uint16_t transactionID, char* playerName)
+{
+	Packet_t * pPlayerRegsiterPacket =  registerPlayerPacket(transactionID, playerName);
+	Communicator_sendplayerreg(pPlayerRegsiterPacket->pBuffer,pPlayerRegsiterPacket->len);
+
+}
+//ceratepacket ------------------------------------------------------------------------------
 
 Packet_t * creatpacket(uint32_t lenpayload,uint8_t type)
 {
@@ -150,6 +197,7 @@ Packet_t * creatpacket(uint32_t lenpayload,uint8_t type)
 	uint8_t * pBuffer = malloc(len);
 	sessionFlags_t * pHeader = &pBuffer[0];
 	pHeader->version=0;
+
 	if(type==1)  //createsession
 	{
 		pHeader->session_request=1;
@@ -195,34 +243,61 @@ Packet_t * creatpacket(uint32_t lenpayload,uint8_t type)
 
 // Paketgame_t------------------------------------------------------------------------------
 
-PacketGame_t * registerPlayerPacket(uint8_t type, uint16_t len, char* playerName)
+Packet_t * registerPlayerPacket(uint16_t transactionID, char* playerName)
 {
-	// Packetlen = Header (fix 7 byte)+ 2 byte PL-Len + Type (1 Byte Player regist) + frei wählbare transaction id (2byte) + PL
-	// PL = type (name) + len name (2byte) + n byte name
 	uint8_t namelen= strlen(playerName);
-	uint32_t sum= 7 + 2 + 1 + namelen;
-	PacketGame_t * player = creatgamepacket(REGISTER_PLAYER, 0x2020 , sum);
-	return player;
+	uint32_t sum = 7 + 1 + 2 + namelen;
+	Packet_t * ppacket = malloc(sizeof(Packet_t));
+	ppacket->len= sum;
+	ppacket->pBuffer= malloc(ppacket->len);
+	memset(ppacket->pBuffer,0x00,ppacket->len);
+	ppacket->pBuffer[0]= 0x01;
+	write_msb2byte(&ppacket->pBuffer[1],sum-7); // - HEADER!!!
+	write_msb2byte(&ppacket->pBuffer[3],REGISTER_PLAYER);
+	write_msb2byte(&ppacket->pBuffer[5],transactionID);
+	ppacket->pBuffer[7]=0x01;
+	write_msb2byte(&ppacket->pBuffer[8],namelen);
+	memcpy(&ppacket->pBuffer[10], &playerName[0], namelen);
+	return ppacket;
+
+
+//	uint8_t commandSize = 1 + 2;
+//	uint8_t headerSize = 7;
+//	uint32_t sum = headerSize + commandSize + namelen;
+//	Packet_t * ppacket = malloc (sizeof(Packet_t));
+//	ppacket->len = sum;
+//	//uint8_t * pBuffer = malloc(sum);
+//	ppacket->pBuffer = &pBuffer[0];
+//	pBuffer[0] = 1;
+//	write_msb2byte(&pBuffer[1],sum-7); // - HEADER!!!
+//	write_msb2byte(&pBuffer[3],REGISTER_PLAYER);
+//	write_msb2byte(&pBuffer[5],transactionID);
+//	memcpy(&pBuffer[7], &playerName[0], namelen);
+
 }
 
 
 // creategamepacket-------------------------------------------------------------------------
 
-PacketGame_t * creatgamepacket(CommandID_e type, uint16_t playerID, uint32_t sum)
+Packet_t * creatgamepacket(CommandID_e type, uint16_t playerID, uint32_t sum)
 {
-	PacketGame_t * ppacket = malloc (sizeof(PacketGame_t));
+	Packet_t * ppacket = malloc (sizeof(Packet_t));
 	ppacket->len = sum;
-	ppacket->pBuffer = malloc(ppacket->len);
 	uint8_t * pBuffer = malloc(sum);
-	sessionFlags_t * pHeader = &pBuffer[0];
-	pHeader->version=0;
+	write_msb2byte(&pBuffer[1],sum-7); // - HEADER!!!
+	write_msb2byte(&pBuffer[3],REGISTER_PLAYER);
+	write_msb2byte(&pBuffer[5],playerID);
+
+	ppacket->pBuffer =&pBuffer[0];
+//	sessionFlags_t * pHeader = &pBuffer[0];
+//	pBuffer[0] = 0;
+//	pHeader->version=0;
+	pBuffer[0] = 1;
 	if(type==REGISTER_PLAYER)
 	{
 		write_msb2byte(&pBuffer[1],sum-7); // - HEADER!!!
 		write_msb2byte(&pBuffer[3],REGISTER_PLAYER);
 		write_msb2byte(&pBuffer[5],playerID);
-
-		ppacket->pBuffer =&pBuffer[0];
 
 	}
 	else if (type==PLAYER_CONTROLL)

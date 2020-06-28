@@ -2,9 +2,9 @@
  * communicator.c
  *
  *  Created on: 07.05.2020
- *      Author: FKleb
+ *      Author: LukasStreitler
  */
-
+//#include------------------------------------------------------------------------------------
 #include "communicator.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -13,23 +13,23 @@
 #include <windows.h>
 #include "../network/network.h"
 #include "../input/input_service.h"
-
+//define---------------------------------------------------------------------------------------
 #define DEFAULT_SERVER_IP_ADDRESS			("195.34.89.241")
 #define DEFAULT_SERVER_PORT					(7)
 #define DEFAULT_GAME_SERVER_IP_ADRESS		("52.57.105.0")
 #define DEFAULT_GAME_SERVER_PORT			(44444)
 #define SESSION_HEADER_LEN					9
 #define APP_HEADER_LEN		  				8
-
+//globel---------------------------------------------------------------------------------------
 uint16_t gSessionID = 0;
 uint16_t gSequenceNr = 0;
 uint32_t gNonce = 0;
 uint16_t gCcr = 0;
 uint16_t gstate = 0;
+// static--------------------------------------------------------------------------------------
 static uint8_t secret[8] = { 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00, 0x01 };
-
 static void cbNetworkReceive(uint8_t* pBuffer, uint32_t len);
-
+//cbNetworkReceive-----------------------------------------------------------------------------
 static void cbNetworkReceive(uint8_t* pBuffer, uint32_t len) {
 	printf("Packet received with len=%d.\r\n", len);
 
@@ -51,16 +51,12 @@ static void cbNetworkReceive(uint8_t* pBuffer, uint32_t len) {
 	}
 
 }
-
 // Free ---------------------------------------------------------------------------------------
-
 void freepacket(Packet_t * packet) {
 	free(packet->pBuffer);
 	free(packet);
 }
-
 // communicator--------------------------------------------------------------------------------
-
 int communicator_connect(Server_e server) {
 	if (!network_init(cbNetworkReceive)) {
 		return -1;
@@ -87,7 +83,6 @@ int communicator_connect(Server_e server) {
 
 	return 0;
 }
-
 void communicator_heartbeat() {
 	Packet_t * pheartbeat = malloc(sizeof(Packet_t));
 	pheartbeat->len = SESSION_HEADER_LEN;
@@ -105,7 +100,6 @@ void communicator_heartbeat() {
 	freepacket(pheartbeat);
 
 }
-
 void communicator_createSession() {
 	uint8_t packet[9] = { 0 };
 	sessionFlags_t* pHeader = (sessionFlags_t*) &packet[0];
@@ -116,7 +110,6 @@ void communicator_createSession() {
 		Sleep(10);
 	}
 }
-
 Packet_t * communicator_Sendcr()  //ausbessern falls zeit
 {
 	gCcr = calcCRC();
@@ -138,7 +131,6 @@ Packet_t * communicator_Sendcr()  //ausbessern falls zeit
 	return ppacket;
 
 }
-
 void Communicator_sendappmessage(uint8_t * pl, uint32_t pllen) {
 
 	Packet_t * pplayerreg = malloc(sizeof(Packet_t));
@@ -155,7 +147,6 @@ void Communicator_sendappmessage(uint8_t * pl, uint32_t pllen) {
 	freepacket(pplayerreg);
 
 }
-
 void communicator_sendcompplayerreg(uint16_t transactionID, char* playerName) {
 	Packet_t * pPlayerRegsiterPacket = registerPlayerPacket(transactionID,
 			playerName);
@@ -164,8 +155,7 @@ void communicator_sendcompplayerreg(uint16_t transactionID, char* playerName) {
 
 }
 void communicator_movement(bool up, bool down, bool left, bool right,
-		uint16_t transactionID)
-{
+		uint16_t transactionID) {
 	Packet_t * pmove = registermovemetpacket(up, right, down, left,
 			transactionID);
 	Communicator_sendappmessage(pmove->pBuffer, pmove->len);
@@ -273,7 +263,6 @@ Packet_t * registermovemetpacket(bool up, bool down, bool left, bool right,
 
 	return ppacket;
 }
-
 Packet_t * registerdroopfood(uint16_t transactionID) {
 	uint32_t len = APP_HEADER_LEN;
 	Packet_t * ppacket = malloc(sizeof(Packet_t));
@@ -332,7 +321,6 @@ uint16_t calcCRC() {
 	return hashvalue2;
 
 }
-
 uint16_t calcHmac(uint8_t* pbuff, uint32_t lenght) {
 	uint16_t sum = 8 + 2 + lenght; // anzahl der bytes für secret und cr
 	uint8_t* phmac = malloc(sum);
@@ -348,7 +336,6 @@ uint16_t calcHmac(uint8_t* pbuff, uint32_t lenght) {
 	return hmac;
 
 }
-
 uint16_t CRC(uint8_t* padd, uint32_t len) {
 	uint16_t calkcrc = 0xFFFF;
 	for (int i = 0; i < len; i++) {
@@ -364,30 +351,24 @@ uint16_t CRC(uint8_t* padd, uint32_t len) {
 	}
 	return calkcrc;
 }
-
 //MSB R/W ------------------------------------------------------------------------------------
-
 void write_msb2byte(uint8_t* padd, uint16_t val) {
 	padd[0] = (val & 0xFF00) >> 8;
 	padd[1] = (val & 0xFF);
 }
-
 void write_msb4byte(uint8_t* padd, uint32_t val) {
 	padd[0] = (val & 0xFF000000) >> 24;
 	padd[1] = (val & 0xFF0000) >> 16;
 	padd[2] = (val & 0xFF00) >> 8;
 	padd[3] = (val & 0xFF);
 }
-
 uint16_t read_msb2byte(uint8_t* pBuf) {
 	uint16_t result = (pBuf[0] << 8) | (pBuf[1]);
 	return result;
 }
-
 uint32_t read_msb4byte(uint8_t* pBuf) {
 	uint32_t result = (pBuf[0] << 24) | (pBuf[1] << 16) | (pBuf[2] << 8)
 			| (pBuf[3] << 0);
 	return result;
 }
-
 // ---------------------------------------------------------------------------------------

@@ -68,5 +68,6 @@ void communicator_movement(bool up, bool down, bool left, bool right,
 		uint16_t transactionID);
 void communicator_drop(uint16_t transactionID);
 Packet_t * registercreatemessage(char * message,uint16_t transactionID);
+void communicator_sendmessage(char * message,uint16_t transactionID);
 
 #endif /* SRC_COMMUNICATOR_COMMUNICATOR_H_ */

@@ -33,6 +33,7 @@ int main(int argc, char** argv) {
 			printf("Sending Heartbeat\n");
 			lastheartebeat = sekunden;
 
+
 		}
 
 		Sleep(20);
@@ -43,12 +44,30 @@ int main(int argc, char** argv) {
 
 static void cbInputHandler(InputKeyMask_t m) {
 	printf("Input event: %d.\r\n", m);
+
+
 	if (m == INPUT_KEY_MASK_KEY_ESC) {
 		gRunning = false;
 	}
 
 	if (m & INPUT_KEY_MASK_KEY_SPACE) {
 		communicator_drop(playerID);
+	}
+	if (m == INPUT_KEY_MASK_KEY_C){
+	bool sende=true;
+	char  message[128] = {0};
+	int i =0;
+	getchar();
+	while(sende && i<128){
+		message [i] = getchar();
+		if(message[i]=='\n'){
+			sende= false;
+		}
+		i++;
+	}
+	printf("%s",message);
+	message[i]= '\0';
+	communicator_sendmessage(message,playerID);
 	}
 	bool up = (m & INPUT_KEY_MASK_KEY_UP);
 	bool down = (m & INPUT_KEY_MASK_KEY_DOWN);

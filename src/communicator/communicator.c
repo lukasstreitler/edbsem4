@@ -164,6 +164,10 @@ void communicator_drop(uint16_t transactionID) {
 	Packet_t * pdropfood = registerdroopfood(transactionID);
 	Communicator_sendappmessage(pdropfood->pBuffer, pdropfood->len);
 }
+void communicator_sendmessage(char * message,uint16_t transactionID) {
+	Packet_t * pmessage = registercreatemessage(message,transactionID);
+	Communicator_sendappmessage(pmessage->pBuffer, pmessage->len);
+}
 //ceratepacket ------------------------------------------------------------------------------
 Packet_t * creatpacket(uint32_t lenpayload, uint8_t type) //erweitern falls zeit
 
@@ -213,7 +217,7 @@ Packet_t * creatpacket(uint32_t lenpayload, uint8_t type) //erweitern falls zeit
 	}
 	return ppacket;
 }
-// Paketgame_t------------------------------------------------------------------------------
+// Paketgame_t-------------------------------------------------------------------------------
 Packet_t * registerPlayerPacket(uint16_t transactionID, char* playerName) {
 	uint8_t namelen = strlen(playerName);
 	uint32_t sum = 7 + 1 + 2 + namelen;
@@ -252,9 +256,9 @@ Packet_t * registerdroopfood(uint16_t transactionID) {
 }
 Packet_t * registercreatemessage(char * message,uint16_t transactionID){
 	uint16_t messagelen= strlen(message);
-	uint32_t sum = APP_HEADER_LEN + messagelen;
+	uint32_t sum = APP_HEADER_LEN - 1 + messagelen;
 	Packet_t * ppacket = creategamepacket(CHAT_MESSAGE,transactionID,sum);
-	memcpy(&ppacket->pBuffer[7],message,sum);
+	memcpy(&ppacket->pBuffer[7],message,messagelen);
 	return ppacket;
 
 }
@@ -323,7 +327,7 @@ uint16_t CRC(uint8_t* padd, uint32_t len) {
 	}
 	return calkcrc;
 }
-//MSB R/W ------------------------------------------------------------------------------------
+//MSB R/W -----------------------------------------------------------------------------------
 void write_msb2byte(uint8_t* padd, uint16_t val) {
 	padd[0] = (val & 0xFF00) >> 8;
 	padd[1] = (val & 0xFF);
@@ -343,4 +347,4 @@ uint32_t read_msb4byte(uint8_t* pBuf) {
 			| (pBuf[3] << 0);
 	return result;
 }
-// ---------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------

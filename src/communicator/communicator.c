@@ -268,26 +268,20 @@ Packet_t * creategamepacket(CommandID_e type, uint16_t transactionID,
 	memset(ppacket->pBuffer, 0x00, ppacket->len);
 	ppacket->pBuffer[0] = 0x01;
 	if (type == REGISTER_PLAYER) {
-		write_msb2byte(&ppacket->pBuffer[1], sum - 7); // - HEADER!!!
 		write_msb2byte(&ppacket->pBuffer[3], REGISTER_PLAYER);
-		write_msb2byte(&ppacket->pBuffer[5], transactionID);
 
 	} else if (type == PLAYER_CONTROLL) {
-		write_msb2byte(&ppacket->pBuffer[1], sum - 7);
 		write_msb2byte(&ppacket->pBuffer[3], PLAYER_CONTROLL);
-		write_msb2byte(&ppacket->pBuffer[5], transactionID);
 	} else if (type == DROP_FOOD) {
-		write_msb2byte(&ppacket->pBuffer[1], sum - 7);
 		write_msb2byte(&ppacket->pBuffer[3], DROP_FOOD);
-		write_msb2byte(&ppacket->pBuffer[5], transactionID);
 	} else if (type == CHAT_MESSAGE) {
-		write_msb2byte(&ppacket->pBuffer[1], sum - 7);
 		write_msb2byte(&ppacket->pBuffer[3],CHAT_MESSAGE);
-		write_msb2byte(&ppacket->pBuffer[5], transactionID);
 	}
+	write_msb2byte(&ppacket->pBuffer[1], sum - 7);
+	write_msb2byte(&ppacket->pBuffer[5], transactionID);
 	return ppacket;
 }
-// CALC ----------------------------------------------------------------------------------
+// CALC ------------------------------------------------------------------------------------
 uint16_t calcCRC() {
 	uint8_t cr[12] = { 0x00, 0x00, 0x00, 0x00, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE,
 			0xFF, 0x00, 0x01 };

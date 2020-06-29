@@ -17,13 +17,13 @@ typedef enum {
 	TEST_SERVER, MAIN_SERVER, GAME_SERVER
 } Server_e;
 
-typedef enum {
-	REGISTER_PLAYER = 0x01,
-	PLAYER_CONTROLL = 0x10,
-	DROP_FOOD = 0x20,
-	REQUEST_PLAYER = 0x30,
-	CHAT_MESSAGE = 0x40
-} CommandID_e;
+//typedef enum {
+//	REGISTER_PLAYER = 0x01,
+//	PLAYER_CONTROLL = 0x10,
+//	DROP_FOOD = 0x20,
+//	REQUEST_PLAYER = 0x30,
+//	CHAT_MESSAGE = 0x40
+//} CommandID_e;
 
 //struct-----------------------------------------------------------------------------------
 
@@ -57,17 +57,17 @@ uint16_t read_msb2byte(uint8_t* pBuf);
 Packet_t * communicator_Sendcr();
 void freepacket(Packet_t * packet);
 uint16_t calcHmac(uint8_t* pbuff, uint32_t lenght);
-Packet_t* registerPlayerPacket(uint16_t transactionID, char* playerName);
-Packet_t * creategamepacket(CommandID_e type, uint16_t playerID, uint32_t sum);
-void Communicator_sendappmessage(uint8_t * pl, uint32_t pllen);
 void communicator_sendcompplayerreg(uint16_t transactionID, char* playerName);
-Packet_t * registermovemetpacket(bool up, bool down, bool left, bool right,
-		uint16_t transactionID);
-Packet_t * registerdroopfood(uint16_t transactionID);
 void communicator_movement(bool up, bool down, bool left, bool right,
 		uint16_t transactionID);
 void communicator_drop(uint16_t transactionID);
-Packet_t * registercreatemessage(char * message,uint16_t transactionID);
+void Communicator_sendappmessage(uint8_t * pl, uint32_t pllen);
+//Packet_t* registerPlayerPacket(uint16_t transactionID, char* playerName);
+//Packet_t * registermovemetpacket(bool up, bool down, bool left, bool right,
+//		uint16_t transactionID);
+//Packet_t * registerdroopfood(uint16_t transactionID);
+//Packet_t * creategamepacket(CommandID_e type, uint16_t playerID, uint32_t sum);
+//Packet_t * registercreatemessage(char * message,uint16_t transactionID);
 void communicator_sendmessage(char * message,uint16_t transactionID);
 
 #endif /* SRC_COMMUNICATOR_COMMUNICATOR_H_ */
